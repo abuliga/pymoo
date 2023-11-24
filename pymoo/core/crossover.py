@@ -1,5 +1,5 @@
 import numpy as np
-
+import pandas as pd
 from pymoo.core.operator import Operator
 from pymoo.core.population import Population
 from pymoo.core.variable import Real, get
@@ -43,26 +43,30 @@ class Crossover(Operator):
 
         # the design space from the parents used for the crossover
         if np.any(cross):
-
+            ### CHANGED THIS TO ENSURE ALL NEW MEMBERS HAVE THE
             # we can not prefilter for cross first, because there might be other variables using the same shape as X
-            Q = self._do(problem, X, **kwargs)
-            assert Q.shape == (n_offsprings, n_matings, problem.n_var), "Shape is incorrect of crossover impl."
-            Xp[:, cross] = Q[:, cross]
+            if self.name == 'MyCrossover':
+                Q, X = self._do(problem, X, **kwargs)
+                assert Q.shape == (n_offsprings, n_matings, problem.n_var), "Shape is incorrect of crossover impl."
+                Xp = Q
+            else:
+                Q = self._do(problem, X, **kwargs)
+                assert Q.shape == (n_offsprings, n_matings, problem.n_var), "Shape is incorrect of crossover impl."
+                Xp[:, cross] = Q[:, cross]
 
         # now set the parents whenever NO crossover has been applied
-        for k in np.flatnonzero(~cross):
-            if n_offsprings < n_parents:
-                s = np.random.choice(np.arange(self.n_parents), size=n_offsprings, replace=False)
-            elif n_offsprings == n_parents:
-                s = np.arange(n_parents)
-            else:
-                s = []
-                while len(s) < n_offsprings:
-                    s.extend(np.random.permutation(n_parents))
-                s = s[:n_offsprings]
+                for k in np.flatnonzero(~cross):
+                    if n_offsprings < n_parents:
+                        s = np.random.choice(np.arange(self.n_parents), size=n_offsprings, replace=False)
+                    elif n_offsprings == n_parents:
+                        s = np.arange(n_parents)
+                    else:
+                        s = []
+                        while len(s) < n_offsprings:
+                            s.extend(np.random.permutation(n_parents))
+                        s = s[:n_offsprings]
 
-            Xp[:, k] = np.copy(X[s, k])
-
+                    Xp[:, k] = np.copy(X[s, k])
         # flatten the array to become a 2d-array
         Xp = Xp.reshape(-1, X.shape[-1])
 
